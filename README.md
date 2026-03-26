@@ -1,3 +1,12 @@
+---
+title: HR Compliance OpenEnv
+emoji: 🏢
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+app_port: 7860
+---
 # OpenEnv: HR Compliance Review
 
 ## Environment Motivation & Description
