@@ -9,7 +9,8 @@ dependencies = [
     "openai",
     "pyyaml",
     "gradio",
-    "python-dotenv"
+    "python-dotenv",
+    "Faker"
 ]
 
 [build-system]

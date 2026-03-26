@@ -36,7 +36,9 @@ class HRComplianceEnv:
     
     def reset(self) -> Observation:
         from tasks import get_task_reports
-        self.state_data['reports'] = get_task_reports(self.task_id)
+        reports, gt = get_task_reports(self.task_id)
+        self.state_data['reports'] = reports
+        self.state_data['ground_truth'] = gt
         self.state_data['current_folder'] = "inbox"
         self.history = []
         return self._get_obs()
@@ -106,7 +108,7 @@ class HRComplianceEnv:
         self.history.append({'action': action.model_dump(), 'reason': reason})
         
         from tasks import score_task
-        score, done_reason, task_done = score_task(self.task_id, self.state_data['reports'], action, self.history)
+        score, done_reason, task_done = score_task(self.task_id, self.state_data['reports'], action, self.history, self.state_data.get('ground_truth', {}))
         
         if task_done:
             done = True
