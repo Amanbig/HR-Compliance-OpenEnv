@@ -1,0 +1,17 @@
+[project]
+name = "openenv-email-triage"
+version = "1.0.0"
+description = "Email Triage environment compliant with OpenEnv for the Meta Cup."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic",
+    "openai",
+    "pyyaml",
+    "gradio",
+    "python-dotenv"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

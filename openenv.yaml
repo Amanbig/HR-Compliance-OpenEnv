@@ -1,0 +1,16 @@
+name: core/email-triage
+version: 1.0.0
+description: Triage support emails by reading, moving, tagging, and replying.
+tasks:
+  - id: 1
+    name: "Easy: Delete spam"
+    difficulty: easy
+    description: "Identify and delete all spam emails while preserving legitimate ones."
+  - id: 2
+    name: "Medium: Tag urgent emails"
+    difficulty: medium
+    description: "Tag emails containing keywords like ASAP, down, or broken as 'urgent'."
+  - id: 3
+    name: "Hard: Handle refund"
+    difficulty: hard
+    description: "Identify customer refund requests, move them to the 'Refunds' folder, and reply mentioning the refund 'policy'."
