@@ -5,7 +5,7 @@ WORKDIR /app
 RUN pip install uv
 
 COPY pyproject.toml README.md ./
-RUN uv pip install --system -e .
+RUN uv sync --no-install-project
 
 COPY . .
 
@@ -14,4 +14,4 @@ EXPOSE 7860
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "app.py"]
+CMD ["/app/.venv/bin/python", "app.py"]
