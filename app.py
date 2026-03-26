@@ -1,5 +1,5 @@
 import gradio as gr
-from env import EmailTriageEnv, Action
+from env import HRComplianceEnv, Action
 import yaml
 import json
 
@@ -9,7 +9,7 @@ def init_env(task_id):
     global env
     try:
         task_id_int = int(task_id)
-        env = EmailTriageEnv(task_id_int)
+        env = HRComplianceEnv(task_id_int)
         obs = env.reset()
         
         with open("openenv.yaml", "r") as f:
@@ -33,9 +33,9 @@ def step_env(action_str):
     except Exception as e:
         return f"Error executing step: {str(e)}"
 
-with gr.Blocks(title="OpenEnv - Email Triage") as demo:
-    gr.Markdown("# Email Triage OpenEnv Interface")
-    gr.Markdown("This interface simulates interactions with the Email Triage environment.")
+with gr.Blocks(title="OpenEnv - HR Compliance") as demo:
+    gr.Markdown("# HR Compliance Review Environment")
+    gr.Markdown("Simulate actions as an HR compliance officer interacting with the employee report inbox system.")
     
     with gr.Row():
         task_dropdown = gr.Dropdown(choices=["1", "2", "3"], label="Select Task ID")
@@ -47,7 +47,7 @@ with gr.Blocks(title="OpenEnv - Email Triage") as demo:
     
     gr.Markdown("### Take Action")
     gr.Markdown("""Provide JSON matching the Action Pydantic model. 
-Example JSON for `read` Action: `{"action_type": "read", "email_id": "1", "payload": null}`
+Example JSON for `read` Action: `{"action_type": "read", "item_id": "101", "payload": null}`
 """)
     with gr.Row():
         action_input = gr.Textbox(label="Action JSON Input", lines=3)

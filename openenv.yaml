@@ -1,16 +1,16 @@
-name: core/email-triage
+name: core/hr-compliance
 version: 1.0.0
-description: Triage support emails by reading, moving, tagging, and replying.
+description: Triage HR compliance reports and handle investigations, routing, and safety alerts.
 tasks:
   - id: 1
-    name: "Easy: Delete spam"
+    name: "Easy: IT Ticket Routing"
     difficulty: easy
-    description: "Identify and delete all spam emails while preserving legitimate ones."
+    description: "Identify any incoming messages meant for IT Support (e.g. broken monitors, passwords) and move them to the 'IT_Support' folder."
   - id: 2
-    name: "Medium: Tag urgent emails"
+    name: "Medium: Workplace Safety Violations"
     difficulty: medium
-    description: "Tag emails containing keywords like ASAP, down, or broken as 'urgent'."
+    description: "Identify reports of genuine physical hazards (e.g. spills, unstable structures). Tag them with 'safety_hazard' and reply."
   - id: 3
-    name: "Hard: Handle refund"
+    name: "Hard: Whistleblower Escalation"
     difficulty: hard
-    description: "Identify customer refund requests, move them to the 'Refunds' folder, and reply mentioning the refund 'policy'."
+    description: "Detect severe complaints of embezzlement or misconduct. Move the report to the 'Confidential' folder and tag it 'investigation_required'. Be careful not to escalate standard office gossip."

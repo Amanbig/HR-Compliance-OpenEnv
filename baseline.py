@@ -1,7 +1,7 @@
 import os
 import json
 from openai import OpenAI
-from env import EmailTriageEnv, Action
+from env import HRComplianceEnv, Action
 import yaml
 
 try:
@@ -24,26 +24,26 @@ def run_task(task_id, max_steps=10):
             return 0.0
 
     client = OpenAI(api_key=api_key, base_url=base_url)
-    env = EmailTriageEnv(task_id)
+    env = HRComplianceEnv(task_id)
     obs = env.reset()
     
     with open("openenv.yaml", "r") as f:
         meta = yaml.safe_load(f)
     task_desc = next((t['description'] for t in meta['tasks'] if t['id'] == task_id), "")
     
-    system_prompt = f"""You are an AI Email Assistant. Your task: {task_desc}
+    system_prompt = f"""You are an AI HR Compliance Officer. Your task: {task_desc}
 You can take actions by outputting JSON matching this Pydantic schema:
-Action(action_type: Literal['read', 'reply', 'move', 'delete', 'tag'], email_id: str, payload: Optional[str])
+Action(action_type: Literal['read', 'reply', 'move', 'delete', 'tag'], item_id: str, payload: Optional[str])
 
 Available actions:
-- read: marks email as read. email_id is required. payload is null.
+- read: marks report as read. item_id is required. payload is null.
 - reply: payload should contain the reply body.
 - move: payload should contain the destination folder name.
-- delete: moves to trash. email_id is required. payload is null.
+- delete: moves to trash.
 - tag: payload should contain the tag string.
 
 Output ONLY JSON. Output exactly a dictionary that fits the Action model.
-Example: {{"action_type": "read", "email_id": "1", "payload": null}}
+Example: {{"action_type": "read", "item_id": "101", "payload": null}}
 """
     msgs = [{"role": "system", "content": system_prompt}]
     
