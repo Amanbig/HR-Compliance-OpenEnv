@@ -24,6 +24,9 @@ def step_env(action_str):
     global env
     if not env:
         return "Please initialize the environment first."
+        
+    if not action_str or not action_str.strip():
+        return 'Error: Action JSON cannot be empty. Please provide a valid JSON string (e.g. {"action_type": "read", "item_id": "101", "payload": null})'
     
     try:
         action_dict = json.loads(action_str)
