@@ -1,6 +1,7 @@
 from typing import List, Literal, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
+
 class Report(BaseModel):
     id: str
     sender: str
@@ -12,14 +13,17 @@ class Report(BaseModel):
     replied: bool = False
     reply_body: Optional[str] = None
 
+
 class Observation(BaseModel):
     reports: List[Report]
     current_folder: str
 
+
 class Action(BaseModel):
-    action_type: Literal['read', 'reply', 'move', 'delete', 'tag']
+    action_type: Literal["read", "reply", "move", "delete", "tag"]
     item_id: str
     payload: Optional[str] = None
+
 
 class Reward(BaseModel):
     value: float
@@ -27,49 +31,63 @@ class Reward(BaseModel):
     penalties: float
     reason: str
 
+
 class HRComplianceEnv:
     def __init__(self, task_id: int):
         self.task_id = task_id
-        self.state_data = {}
-        self.history = []
+        self.state_data: Dict[str, Any] = {}
+        self.history: list = []
+        self.cumulative_progress: float = 0.0
+        self.cumulative_penalty: float = 0.0
         self.reset()
-    
+
     def reset(self) -> Observation:
         from tasks import get_task_reports
+
         reports, gt = get_task_reports(self.task_id)
-        self.state_data['reports'] = reports
-        self.state_data['ground_truth'] = gt
-        self.state_data['current_folder'] = "inbox"
+        self.state_data["reports"] = reports
+        self.state_data["ground_truth"] = gt
+        self.state_data["current_folder"] = "inbox"
         self.history = []
+        self.cumulative_progress = 0.0
+        self.cumulative_penalty = 0.0
         return self._get_obs()
 
     def state(self) -> Dict[str, Any]:
         return {
-            "reports": [e.model_dump() for e in self.state_data['reports']],
-            "current_folder": self.state_data['current_folder'],
-            "history": self.history
+            "task_id": self.task_id,
+            "reports": [e.model_dump() for e in self.state_data["reports"]],
+            "current_folder": self.state_data["current_folder"],
+            "history": self.history,
+            "cumulative_progress": self.cumulative_progress,
+            "cumulative_penalty": self.cumulative_penalty,
         }
-        
+
     def _get_obs(self) -> Observation:
         return Observation(
-            reports=[e for e in self.state_data['reports'] if e.folder == self.state_data['current_folder']],
-            current_folder=self.state_data['current_folder']
+            reports=[
+                e
+                for e in self.state_data["reports"]
+                if e.folder == self.state_data["current_folder"]
+            ],
+            current_folder=self.state_data["current_folder"],
         )
-        
+
     def step(self, action: Action):
-        report = next((e for e in self.state_data['reports'] if e.id == action.item_id), None)
-        
-        reward_value = 0.0
+        report = next(
+            (e for e in self.state_data["reports"] if e.id == action.item_id), None
+        )
+
         partial = 0.0
         penalty = 0.0
         reason = ""
         done = False
-        
+
         if not report:
             penalty += 0.1
             reason = "Item ID not found."
         else:
-            if action.action_type == 'read':
+            if action.action_type == "read":
                 if not report.read:
                     report.read = True
                     partial += 0.1
@@ -77,7 +95,7 @@ class HRComplianceEnv:
                 else:
                     penalty += 0.05
                     reason = f"Report {report.id} already read."
-            elif action.action_type == 'tag':
+            elif action.action_type == "tag":
                 if action.payload and action.payload not in report.tags:
                     report.tags.append(action.payload)
                     partial += 0.2
@@ -85,41 +103,56 @@ class HRComplianceEnv:
                 else:
                     penalty += 0.05
                     reason = "Tag already exists or no payload."
-            elif action.action_type == 'move':
+            elif action.action_type == "move":
                 if action.payload:
                     report.folder = action.payload
+                    partial += 0.15
                     reason = f"Moved report {report.id} to '{action.payload}' folder."
                 else:
                     penalty += 0.1
                     reason = "Move action requires a payload (folder name)."
-            elif action.action_type == 'delete':
-                report.folder = 'trash'
+            elif action.action_type == "delete":
+                report.folder = "trash"
                 reason = f"Deleted report {report.id}."
-            elif action.action_type == 'reply':
+            elif action.action_type == "reply":
                 if action.payload:
                     report.replied = True
                     report.reply_body = action.payload
                     reason = f"Replied to report {report.id}."
-                    partial += 0.5
+                    partial += 0.3
                 else:
                     penalty += 0.1
                     reason = "Reply requires a payload."
-                    
-        self.history.append({'action': action.model_dump(), 'reason': reason})
-        
+
+        self.cumulative_progress += partial
+        self.cumulative_penalty += penalty
+        self.history.append({"action": action.model_dump(), "reason": reason})
+
         from tasks import score_task
-        score, done_reason, task_done = score_task(self.task_id, self.state_data['reports'], action, self.history, self.state_data.get('ground_truth', {}))
-        
+
+        score, done_reason, task_done = score_task(
+            self.task_id,
+            self.state_data["reports"],
+            action,
+            self.history,
+            self.state_data.get("ground_truth", {}),
+        )
+
+        # Compute a blended reward: task progress score + step-level signal
+        # The score from score_task reflects how close the agent is to the goal (0.0-1.0)
+        # We blend in partial progress and penalize bad actions for continuous signal
+        reward_value = max(0.0, min(1.0, score + partial - penalty))
+
         if task_done:
             done = True
-            reward_value = score
+            reward_value = score  # Final reward is the authoritative task score
             reason += f" Task completed. {done_reason}"
-            
+
         reward = Reward(
             value=reward_value,
             partial_progress=partial,
             penalties=penalty,
-            reason=reason
+            reason=reason,
         )
-        
+
         return self._get_obs(), reward, done, {"score": score}

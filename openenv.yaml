@@ -1,16 +1,85 @@
 name: core/hr-compliance
 version: 1.0.0
-description: Triage HR compliance reports and handle investigations, routing, and safety alerts.
+description: >
+  Triage HR compliance reports: route IT tickets, identify safety hazards,
+  and escalate whistleblower complaints while filtering out office gossip.
+tags:
+  - openenv
+  - hr-compliance
+  - email-triage
+  - real-world
+
+observation:
+  type: object
+  description: Current inbox view filtered by active folder.
+  properties:
+    reports:
+      type: array
+      items:
+        type: object
+        properties:
+          id: { type: string }
+          sender: { type: string }
+          subject: { type: string }
+          body: { type: string }
+          folder: { type: string }
+          tags: { type: array, items: { type: string } }
+          read: { type: boolean }
+          replied: { type: boolean }
+          reply_body: { type: string, nullable: true }
+    current_folder:
+      type: string
+
+action:
+  type: object
+  description: A single action on a report.
+  properties:
+    action_type:
+      type: string
+      enum: [read, reply, move, delete, tag]
+    item_id:
+      type: string
+    payload:
+      type: string
+      nullable: true
+      description: "Folder name (move), tag string (tag), reply text (reply), or null."
+
+reward:
+  type: object
+  properties:
+    value: { type: number, minimum: 0.0, maximum: 1.0 }
+    partial_progress: { type: number }
+    penalties: { type: number }
+    reason: { type: string }
+
 tasks:
   - id: 1
     name: "Easy: IT Ticket Routing"
     difficulty: easy
-    description: "Identify any incoming messages meant for IT Support (e.g. broken monitors, passwords) and move them to the 'IT_Support' folder."
+    description: >
+      Identify any incoming messages meant for IT Support (e.g. broken monitors,
+      VPN issues, software licenses) and move them to the 'IT_Support' folder.
+      Leave all other reports in the inbox.
+    grader: deterministic
+    score_range: [0.0, 1.0]
+
   - id: 2
     name: "Medium: Workplace Safety Violations"
     difficulty: medium
-    description: "Identify reports of genuine physical hazards (e.g. spills, unstable structures). Tag them with 'safety_hazard' and reply."
+    description: >
+      Identify reports of genuine physical hazards (e.g. chemical spills,
+      exposed wiring, unstable structures). Tag them with 'safety_hazard'
+      and reply acknowledging the report. Do NOT tag false positives that
+      merely use hazard-like language in non-safety contexts.
+    grader: deterministic
+    score_range: [0.0, 1.0]
+
   - id: 3
     name: "Hard: Whistleblower Escalation"
     difficulty: hard
-    description: "Detect severe complaints of embezzlement or misconduct. Move the report to the 'Confidential' folder and tag it 'investigation_required'. Be careful not to escalate standard office gossip."
+    description: >
+      Detect severe complaints of embezzlement or financial misconduct.
+      Move the whistleblower report to the 'Confidential' folder and tag it
+      'investigation_required'. Do NOT escalate standard office gossip.
+    grader: deterministic
+    score_range: [0.0, 1.0]
