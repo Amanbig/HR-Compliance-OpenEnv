@@ -13,4 +13,4 @@ EXPOSE 7860
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860", "--log-level", "info"]
+CMD ["python", "app.py"]
