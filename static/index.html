@@ -284,9 +284,6 @@ async function manualStep() {
 
 async function singleAiStep() {
   const settings = getSettings();
-  if (!settings.api_key && !settings.base_url) {
-    setLog('Set API Key or Base URL in Settings.'); return;
-  }
   setStatus('<span class="loading">AI is thinking...</span>');
   try {
     const data = await api('/api/single-ai-step', settings);
@@ -306,9 +303,6 @@ async function singleAiStep() {
 
 async function runFullEpisode() {
   const settings = getSettings();
-  if (!settings.api_key && !settings.base_url) {
-    setLog('Set API Key or Base URL in Settings.'); return;
-  }
   setStatus('<span class="loading">Running full episode...</span>');
   setLog('Starting full episode...');
   try {
