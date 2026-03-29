@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenEnv — HR Compliance Review</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background: #f9fafb; color: #1f2937; line-height: 1.5; padding: 1rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    /* Header */
+    .main-header { text-align: center; padding: 1.5rem 0 0.5rem; }
+    .main-header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .main-header p { color: #6b7280; font-size: 0.95rem; }
+
+    /* Cards */
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+            padding: 1rem; margin-bottom: 1rem; }
+    .card h3 { margin-bottom: 0.5rem; font-size: 1rem; }
+
+    /* Accordion */
+    details { margin-bottom: 1rem; }
+    details summary { cursor: pointer; font-weight: 600; padding: 0.5rem 0; }
+
+    /* Grid */
+    .grid-2 { display: grid; grid-template-columns: 3fr 1fr; gap: 1rem; }
+    @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+    .settings-row { display: grid; grid-template-columns: 2fr 2fr 2fr; gap: 0.5rem; }
+    @media (max-width: 768px) { .settings-row { grid-template-columns: 1fr; } }
+
+    /* Form elements */
+    label { font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 0.25rem; }
+    input, textarea, select { width: 100%; padding: 0.5rem; border: 1px solid #d1d5db;
+      border-radius: 6px; font-size: 0.9rem; font-family: inherit; }
+    textarea { resize: vertical; }
+
+    /* Radio group */
+    .task-list { list-style: none; padding: 0; }
+    .task-list li { margin-bottom: 0.35rem; }
+    .task-list label { font-weight: 400; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+    .task-list input[type="radio"] { width: auto; }
+
+    /* Buttons */
+    .btn { padding: 0.5rem 1.25rem; border: none; border-radius: 6px; font-size: 0.9rem;
+           font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .btn-secondary:hover:not(:disabled) { background: #d1d5db; }
+    .btn-lg { padding: 0.65rem 1.5rem; font-size: 1rem; }
+
+    /* Score */
+    .score-display { font-size: 2.5rem; font-weight: 800; text-align: center;
+                     padding: 0.5rem; font-family: monospace; }
+    .score-label { text-align: center; color: #6b7280; font-size: 0.85rem; }
+
+    /* Status bar */
+    #status { padding: 0.5rem; background: #f0f9ff; border: 1px solid #bae6fd;
+              border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
+    th { background: #f3f4f6; font-weight: 600; }
+
+    /* Log */
+    #log { max-height: 400px; overflow-y: auto; white-space: pre-wrap;
+           font-family: 'SF Mono', Monaco, monospace; font-size: 0.82rem;
+           background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; }
+
+    /* Report details */
+    .report-detail { margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb; }
+    .report-detail h4 { font-size: 0.9rem; }
+    .report-detail .meta { color: #6b7280; font-size: 0.8rem; margin: 0.25rem 0; }
+    .report-detail blockquote { margin: 0.5rem 0; padding-left: 0.75rem;
+      border-left: 3px solid #d1d5db; color: #374151; font-size: 0.85rem; }
+
+    .loading { display: inline-block; }
+    .loading::after { content: ''; display: inline-block; width: 14px; height: 14px;
+      border: 2px solid #ccc; border-top-color: #2563eb; border-radius: 50%;
+      animation: spin 0.6s linear infinite; margin-left: 0.5rem; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .inline-flex { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .mt-1 { margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="main-header">
+    <h1>HR Compliance Review</h1>
+    <p>OpenEnv environment — triage reports, route IT tickets, identify hazards,
+       escalate legal threats, and detect harassment patterns.</p>
+  </div>
+
+  <!-- Settings -->
+  <details class="card">
+    <summary>Model & API Settings</summary>
+    <div class="settings-row mt-1">
+      <div>
+        <label for="apiKey">API Key (HF_TOKEN)</label>
+        <input type="password" id="apiKey" placeholder="hf_...">
+      </div>
+      <div>
+        <label for="model">Model</label>
+        <input type="text" id="model" value="meta-llama/Llama-3.3-70B-Instruct">
+      </div>
+      <div>
+        <label for="baseUrl">Base URL</label>
+        <input type="text" id="baseUrl" placeholder="https://router.huggingface.co/v1">
+      </div>
+    </div>
+  </details>
+
+  <!-- Task selection -->
+  <div class="card">
+    <h3>Select a Task</h3>
+    <div class="inline-flex">
+      <ul class="task-list" style="flex:1">
+        <li><label><input type="radio" name="task" value="1" checked>
+          1 — IT Ticket Routing (Easy)</label></li>
+        <li><label><input type="radio" name="task" value="2">
+          2 — Safety Violations (Medium)</label></li>
+        <li><label><input type="radio" name="task" value="3">
+          3 — Whistleblower Escalation (Hard)</label></li>
+        <li><label><input type="radio" name="task" value="4">
+          4 — Legal Threat Routing (Medium-Hard)</label></li>
+        <li><label><input type="radio" name="task" value="5">
+          5 — Harassment Pattern (Hard)</label></li>
+      </ul>
+      <button class="btn btn-primary" onclick="loadTask()">Load Task</button>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div id="status"><em>Select a task and click Load Task to begin.</em></div>
+
+  <!-- Main layout -->
+  <div class="grid-2">
+    <div>
+      <div class="card">
+        <h3>Inbox</h3>
+        <div id="reportsTable"><em>No reports loaded.</em></div>
+        <details class="mt-1">
+          <summary>Full report text</summary>
+          <div id="reportDetails"><em>Load a task to see reports.</em></div>
+        </details>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Score</h3>
+        <div class="score-display" id="scoreValue">-</div>
+        <div class="score-label">current score</div>
+      </div>
+      <div class="card">
+        <h3>AI Controls</h3>
+        <button class="btn btn-primary btn-lg" style="width:100%;margin-bottom:0.5rem"
+                onclick="runFullEpisode()">Run Full Episode</button>
+        <button class="btn btn-secondary" style="width:100%" onclick="singleAiStep()">
+          Single AI Step</button>
+      </div>
+      <div class="card">
+        <h3>Manual Control</h3>
+        <label for="actionInput">Action JSON</label>
+        <textarea id="actionInput" rows="2"
+          placeholder='{"action_type":"read","item_id":"IT-101","payload":null}'></textarea>
+        <button class="btn btn-secondary mt-1" onclick="manualStep()">Execute Step</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Episode Log -->
+  <div class="card">
+    <h3>Episode Log</h3>
+    <div id="log"><em>Run an episode to see the step-by-step log.</em></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function getTask() {
+  return document.querySelector('input[name="task"]:checked')?.value || '1';
+}
+
+function getSettings() {
+  return {
+    api_key: $('apiKey').value,
+    base_url: $('baseUrl').value,
+    model: $('model').value,
+  };
+}
+
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+function setStatus(html) { $('status').innerHTML = html; }
+function setScore(s) { $('scoreValue').textContent = s; }
+function setLog(text) { $('log').textContent = text; }
+function appendLog(text) { $('log').textContent += '\n' + text; }
+
+function renderReportsTable(reports) {
+  if (!reports || !reports.length) {
+    $('reportsTable').innerHTML = '<em>No reports in this folder.</em>';
+    return;
+  }
+  let html = '<table><tr><th>ID</th><th>Sender</th><th>Subject</th><th>Tags</th>' +
+    '<th>Priority</th><th>Read</th><th>Replied</th></tr>';
+  for (const r of reports) {
+    const tags = r.tags?.length ? r.tags.join(', ') : '—';
+    const pri = r.priority !== 'normal' ? `<strong>${r.priority}</strong>` : r.priority;
+    html += `<tr><td><code>${r.id}</code></td><td>${r.sender}</td>` +
+      `<td><strong>${r.subject}</strong></td><td>${tags}</td>` +
+      `<td>${pri}</td><td>${r.read ? 'Yes' : '—'}</td>` +
+      `<td>${r.replied ? 'Yes' : '—'}</td></tr>`;
+  }
+  html += '</table>';
+  $('reportsTable').innerHTML = html;
+}
+
+function renderReportDetails(reports) {
+  if (!reports || !reports.length) {
+    $('reportDetails').innerHTML = '';
+    return;
+  }
+  let html = '';
+  for (const r of reports) {
+    let meta = [];
+    if (r.priority !== 'normal') meta.push(`Priority: <strong>${r.priority}</strong>`);
+    if (r.escalated_to) meta.push(`Escalated to: <code>${r.escalated_to}</code>`);
+    if (r.assigned_to) meta.push(`Assigned to: <code>${r.assigned_to}</code>`);
+    html += `<div class="report-detail">` +
+      `<h4>[${r.id}] ${r.subject}</h4>` +
+      `<div class="meta">From: <code>${r.sender}</code></div>` +
+      (meta.length ? `<div class="meta">${meta.join(' | ')}</div>` : '') +
+      `<blockquote>${r.body}</blockquote></div>`;
+  }
+  $('reportDetails').innerHTML = html;
+}
+
+async function loadTask() {
+  const taskId = getTask();
+  setStatus('<span class="loading">Loading task...</span>');
+  try {
+    const data = await api('/api/load-task', {task_id: parseInt(taskId)});
+    if (data.error) { setStatus(`Error: ${data.error}`); return; }
+    setStatus(`<strong>Task ${data.task_id}: ${data.task_name}</strong> (${data.difficulty}) ` +
+      `| ${data.reports.length} reports | Folder: <code>${data.current_folder}</code>`);
+    renderReportsTable(data.reports);
+    renderReportDetails(data.reports);
+    setScore('-');
+    setLog(data.description || '');
+  } catch (e) { setStatus(`Error: ${e.message}`); }
+}
+
+async function manualStep() {
+  const raw = $('actionInput').value.trim();
+  if (!raw) { setLog('Error: Action JSON cannot be empty.'); return; }
+  try {
+    const body = JSON.parse(raw);
+    const data = await api('/api/manual-step', body);
+    if (data.error) { setLog(`Error: ${data.error}`); return; }
+    renderReportsTable(data.observation.reports);
+    renderReportDetails(data.observation.reports);
+    setScore(data.info.score.toFixed(2));
+    const r = data.reward;
+    let log = `Action: ${body.action_type}(${body.item_id})\nReward: ${r.value.toFixed(2)} | ${r.reason}`;
+    if (data.done) log += `\n\nTask completed! Final score: ${data.info.score.toFixed(2)}`;
+    setLog(log);
+    setStatus(`Folder: ${data.observation.current_folder} | ${data.observation.reports.length} reports` +
+      (data.done ? ' | DONE' : ''));
+  } catch (e) { setLog(`Error: ${e.message}`); }
+}
+
+async function singleAiStep() {
+  const settings = getSettings();
+  if (!settings.api_key && !settings.base_url) {
+    setLog('Set API Key or Base URL in Settings.'); return;
+  }
+  setStatus('<span class="loading">AI is thinking...</span>');
+  try {
+    const data = await api('/api/single-ai-step', settings);
+    if (data.error) { setLog(`Error: ${data.error}`); setStatus('Error'); return; }
+    renderReportsTable(data.observation.reports);
+    renderReportDetails(data.observation.reports);
+    setScore(data.info.score.toFixed(2));
+    $('actionInput').value = data.action_json || '';
+    const r = data.reward;
+    let log = `AI: ${data.action.action_type}(${data.action.item_id})\nReward: ${r.value.toFixed(2)} | ${r.reason}`;
+    if (data.done) log += `\n\nTask completed! Final score: ${data.info.score.toFixed(2)}`;
+    setLog(log);
+    setStatus(`Folder: ${data.observation.current_folder} | ${data.observation.reports.length} reports` +
+      (data.done ? ' | DONE' : ''));
+  } catch (e) { setLog(`Error: ${e.message}`); setStatus('Error'); }
+}
+
+async function runFullEpisode() {
+  const settings = getSettings();
+  if (!settings.api_key && !settings.base_url) {
+    setLog('Set API Key or Base URL in Settings.'); return;
+  }
+  setStatus('<span class="loading">Running full episode...</span>');
+  setLog('Starting full episode...');
+  try {
+    const data = await api('/api/full-episode', settings);
+    if (data.error) { setLog(`Error: ${data.error}`); setStatus('Error'); return; }
+    renderReportsTable(data.observation.reports);
+    renderReportDetails(data.observation.reports);
+    setScore(data.score.toFixed(2));
+    setLog(data.log);
+    const passed = data.score >= 1.0 ? ' ✓ PASSED' : '';
+    setStatus(`<strong>Task ${data.task_id}: ${data.task_name}</strong> | ` +
+      `Score: ${data.score.toFixed(2)} | Steps: ${data.steps}${passed}`);
+  } catch (e) { setLog(`Error: ${e.message}`); setStatus('Error'); }
+}
+</script>
+</body>
+</html>
