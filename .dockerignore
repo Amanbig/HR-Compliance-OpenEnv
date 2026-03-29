@@ -7,3 +7,5 @@ __pycache__/
 .gitignore
 .dockerignore
 Dockerfile
+uv.lock
+.ruff_cache/

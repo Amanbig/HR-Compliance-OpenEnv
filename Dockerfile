@@ -4,10 +4,14 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir uv
 
-COPY . .
+# Copy only dependency file first for layer caching
+COPY pyproject.toml .
 
-# Install all dependencies declared in pyproject.toml into the system Python
-RUN uv pip install --no-cache --system .
+# Install dependencies only (not the project itself)
+RUN uv pip install --no-cache --system pydantic openai pyyaml python-dotenv Faker uvicorn fastapi
+
+# Copy the rest of the code
+COPY . .
 
 EXPOSE 7860
 
