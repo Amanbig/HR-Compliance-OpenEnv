@@ -30,7 +30,11 @@ MAX_AUTO_STEPS = 15
 
 TASK_INFO = {
     1: {"name": "IT Ticket Routing", "difficulty": "Easy", "color": "#22c55e"},
-    2: {"name": "Workplace Safety Violations", "difficulty": "Medium", "color": "#f59e0b"},
+    2: {
+        "name": "Workplace Safety Violations",
+        "difficulty": "Medium",
+        "color": "#f59e0b",
+    },
     3: {"name": "Whistleblower Escalation", "difficulty": "Hard", "color": "#ef4444"},
 }
 
@@ -88,10 +92,12 @@ async def api_reset(req: ResetRequest = ResetRequest()):
     global api_env
     api_env = HRComplianceEnv(req.task_id)
     obs = api_env.reset()
-    return JSONResponse(content={
-        "observation": obs.model_dump(),
-        "info": {"task_id": req.task_id},
-    })
+    return JSONResponse(
+        content={
+            "observation": obs.model_dump(),
+            "info": {"task_id": req.task_id},
+        }
+    )
 
 
 @app.post("/step")
@@ -102,14 +108,18 @@ async def api_step(req: StepRequest):
             status_code=400,
             content={"error": "Environment not initialized. Call /reset first."},
         )
-    action = Action(action_type=req.action_type, item_id=req.item_id, payload=req.payload)
+    action = Action(
+        action_type=req.action_type, item_id=req.item_id, payload=req.payload
+    )
     obs, reward, done, info = api_env.step(action)
-    return JSONResponse(content={
-        "observation": obs.model_dump(),
-        "reward": reward.model_dump(),
-        "done": done,
-        "info": info,
-    })
+    return JSONResponse(
+        content={
+            "observation": obs.model_dump(),
+            "reward": reward.model_dump(),
+            "done": done,
+            "info": info,
+        }
+    )
 
 
 @app.get("/state")
@@ -211,7 +221,12 @@ def init_env(task_id):
         info = TASK_INFO[task_id_int]
         task_desc = load_task_desc(task_id_int)
         status = f"**Task {task_id_int}: {info['name']}** ({info['difficulty']}) | {len(obs.reports)} reports in inbox | Folder: `{obs.current_folder}`"
-        return status, format_reports_md(obs), format_report_details(obs), f"Environment ready. {task_desc}"
+        return (
+            status,
+            format_reports_md(obs),
+            format_report_details(obs),
+            f"Environment ready. {task_desc}",
+        )
     except Exception as e:
         return "", "", "", f"Failed to initialize: {e}"
 
@@ -221,7 +236,13 @@ def step_env(action_str):
     if not gr_env:
         return "", "", "", "-", "Please load a task first."
     if not action_str or not action_str.strip():
-        return gr.update(), gr.update(), gr.update(), gr.update(), "Error: Action JSON cannot be empty."
+        return (
+            gr.update(),
+            gr.update(),
+            gr.update(),
+            gr.update(),
+            "Error: Action JSON cannot be empty.",
+        )
     try:
         action_dict = json.loads(action_str)
         action = Action(**action_dict)
@@ -229,7 +250,10 @@ def step_env(action_str):
         reports_md = format_reports_md(obs)
         details_md = format_report_details(obs)
         score_str = f"{info['score']:.2f}"
-        status_parts = [f"Folder: `{obs.current_folder}`", f"{len(obs.reports)} reports"]
+        status_parts = [
+            f"Folder: `{obs.current_folder}`",
+            f"{len(obs.reports)} reports",
+        ]
         if done:
             status_parts.append("**DONE**")
         status = " | ".join(status_parts)
@@ -244,9 +268,23 @@ def step_env(action_str):
 def auto_step_env(api_key, base_url, model_name):
     global gr_env, gr_task_id
     if not gr_env:
-        return gr.update(), gr.update(), gr.update(), gr.update(), "Please load a task first.", ""
+        return (
+            gr.update(),
+            gr.update(),
+            gr.update(),
+            gr.update(),
+            "Please load a task first.",
+            "",
+        )
     if not api_key and not base_url:
-        return gr.update(), gr.update(), gr.update(), gr.update(), "Error: Set API Key or Base URL in Settings.", ""
+        return (
+            gr.update(),
+            gr.update(),
+            gr.update(),
+            gr.update(),
+            "Error: Set API Key or Base URL in Settings.",
+            "",
+        )
     try:
         task_desc = load_task_desc(gr_task_id)
         system_prompt = build_system_prompt(task_desc)
@@ -259,7 +297,10 @@ def auto_step_env(api_key, base_url, model_name):
             model=model_name if model_name else "meta-llama/Llama-3.3-70B-Instruct",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Current observation:\n{obs.model_dump_json()}"},
+                {
+                    "role": "user",
+                    "content": f"Current observation:\n{obs.model_dump_json()}",
+                },
             ],
             temperature=0.2,
             max_tokens=300,
@@ -271,7 +312,9 @@ def auto_step_env(api_key, base_url, model_name):
         reports_md = format_reports_md(obs)
         details_md = format_report_details(obs)
         score_str = f"{info['score']:.2f}"
-        status = f"Folder: `{obs.current_folder}` | {len(obs.reports)} reports" + (" | **DONE**" if done else "")
+        status = f"Folder: `{obs.current_folder}` | {len(obs.reports)} reports" + (
+            " | **DONE**" if done else ""
+        )
         log = f"AI chose: `{action.action_type}({action.item_id})`\nReward: {reward.value:.2f} | {reward.reason}"
         if done:
             log += f"\n\n**Task completed! Final score: {score_str}**"
@@ -283,9 +326,21 @@ def auto_step_env(api_key, base_url, model_name):
 def run_full_episode(api_key, base_url, model_name):
     global gr_env, gr_task_id
     if not gr_task_id:
-        return gr.update(), gr.update(), gr.update(), gr.update(), "Please load a task first."
+        return (
+            gr.update(),
+            gr.update(),
+            gr.update(),
+            gr.update(),
+            "Please load a task first.",
+        )
     if not api_key and not base_url:
-        return gr.update(), gr.update(), gr.update(), gr.update(), "Error: Set API Key or Base URL in Settings."
+        return (
+            gr.update(),
+            gr.update(),
+            gr.update(),
+            gr.update(),
+            "Error: Set API Key or Base URL in Settings.",
+        )
     try:
         env_local = HRComplianceEnv(gr_task_id)
         obs = env_local.reset()
@@ -314,9 +369,16 @@ def run_full_episode(api_key, base_url, model_name):
 
         for step in range(1, MAX_AUTO_STEPS + 1):
             obs_text = obs.model_dump_json(indent=2)
-            messages.append({"role": "user", "content": f"Step {step}/{MAX_AUTO_STEPS}. Current observation:\n{obs_text}"})
+            messages.append(
+                {
+                    "role": "user",
+                    "content": f"Step {step}/{MAX_AUTO_STEPS}. Current observation:\n{obs_text}",
+                }
+            )
             try:
-                resp = client.chat.completions.create(model=model, messages=messages, temperature=0.2, max_tokens=300)
+                resp = client.chat.completions.create(
+                    model=model, messages=messages, temperature=0.2, max_tokens=300
+                )
                 response_text = resp.choices[0].message.content or ""
             except Exception as exc:
                 log_lines.append(f"| {step} | API Error | - | {exc} |")
@@ -327,30 +389,51 @@ def run_full_episode(api_key, base_url, model_name):
                 action = Action(**action_dict)
             except Exception:
                 log_lines.append(f"| {step} | Parse Error | - | Bad JSON from model |")
-                messages.append({"role": "user", "content": "Invalid JSON. Output ONLY a valid JSON action object."})
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": "Invalid JSON. Output ONLY a valid JSON action object.",
+                    }
+                )
                 continue
 
             obs, reward, done, info = gr_env.step(action)
             final_score = info.get("score", 0.0)
             payload_str = f", '{action.payload}'" if action.payload else ""
             action_str = f"`{action.action_type}({action.item_id}{payload_str})`"
-            reason_short = reward.reason[:60] + ("..." if len(reward.reason) > 60 else "")
-            log_lines.append(f"| {step} | {action_str} | {reward.value:.2f} | {reason_short} |")
+            reason_short = reward.reason[:60] + (
+                "..." if len(reward.reason) > 60 else ""
+            )
+            log_lines.append(
+                f"| {step} | {action_str} | {reward.value:.2f} | {reason_short} |"
+            )
             if done:
                 final_step = step
                 break
-            messages.append({"role": "user", "content": f"Action executed. Reward: {reward.value:.2f}, Progress: {reward.partial_progress:.2f}, Penalties: {reward.penalties:.2f}. Feedback: {reward.reason}"})
+            messages.append(
+                {
+                    "role": "user",
+                    "content": f"Action executed. Reward: {reward.value:.2f}, Progress: {reward.partial_progress:.2f}, Penalties: {reward.penalties:.2f}. Feedback: {reward.reason}",
+                }
+            )
 
         if done:
-            log_lines.append(f"\n**Completed in {final_step} steps. Final score: {final_score:.2f}**")
+            log_lines.append(
+                f"\n**Completed in {final_step} steps. Final score: {final_score:.2f}**"
+            )
         else:
-            log_lines.append(f"\n**Reached max steps ({MAX_AUTO_STEPS}). Score: {final_score:.2f}**")
+            log_lines.append(
+                f"\n**Reached max steps ({MAX_AUTO_STEPS}). Score: {final_score:.2f}**"
+            )
 
         final_obs = gr_env._get_obs()
         reports_md = format_reports_md(final_obs)
         details_md = format_report_details(final_obs)
         score_str = f"{final_score:.2f}"
-        status = f"**Task {gr_task_id}: {info_t['name']}** | Score: {score_str} | Steps: {final_step}" + (" | PASSED" if final_score >= 1.0 else "")
+        status = (
+            f"**Task {gr_task_id}: {info_t['name']}** | Score: {score_str} | Steps: {final_step}"
+            + (" | PASSED" if final_score >= 1.0 else "")
+        )
         return status, reports_md, details_md, score_str, "\n".join(log_lines)
     except Exception as e:
         return gr.update(), gr.update(), gr.update(), gr.update(), f"Error: {e}"
@@ -368,9 +451,20 @@ with gr.Blocks(title="OpenEnv - HR Compliance Review") as demo:
 
     with gr.Accordion("Model & API Settings", open=False):
         with gr.Row():
-            api_key_input = gr.Textbox(label="API Key (HF_TOKEN)", type="password", placeholder="hf_...", value=API_KEY, scale=2)
+            api_key_input = gr.Textbox(
+                label="API Key (HF_TOKEN)",
+                type="password",
+                placeholder="hf_...",
+                value=API_KEY,
+                scale=2,
+            )
             model_input = gr.Textbox(label="Model", value=MODEL, scale=2)
-            base_url_input = gr.Textbox(label="Base URL", placeholder="https://router.huggingface.co/v1", value=API_BASE, scale=2)
+            base_url_input = gr.Textbox(
+                label="Base URL",
+                placeholder="https://router.huggingface.co/v1",
+                value=API_BASE,
+                scale=2,
+            )
 
     gr.Markdown("### Select a Task")
     with gr.Row(equal_height=True):
@@ -380,7 +474,8 @@ with gr.Blocks(title="OpenEnv - HR Compliance Review") as demo:
                 ("Task 2: Safety Violations (Medium)", "2"),
                 ("Task 3: Whistleblower Escalation (Hard)", "3"),
             ],
-            label="", value="1",
+            label="",
+            value="1",
         )
         load_btn = gr.Button("Load Task", variant="primary", scale=0, min_width=140)
 
@@ -395,14 +490,22 @@ with gr.Blocks(title="OpenEnv - HR Compliance Review") as demo:
 
         with gr.Column(scale=1, min_width=250):
             gr.Markdown("### Score")
-            score_display = gr.Markdown("<div class='score-display'>-</div><div class='score-label'>current score</div>")
+            score_display = gr.Markdown(
+                "<div class='score-display'>-</div><div class='score-label'>current score</div>"
+            )
             gr.Markdown("---")
             gr.Markdown("### AI Controls")
-            full_episode_btn = gr.Button("Run Full Episode", variant="primary", size="lg")
+            full_episode_btn = gr.Button(
+                "Run Full Episode", variant="primary", size="lg"
+            )
             auto_step_btn = gr.Button("Single AI Step", variant="secondary")
             gr.Markdown("---")
             gr.Markdown("### Manual Control")
-            action_input = gr.Textbox(label="Action JSON", lines=2, placeholder='{"action_type":"read","item_id":"IT-101"}')
+            action_input = gr.Textbox(
+                label="Action JSON",
+                lines=2,
+                placeholder='{"action_type":"read","item_id":"IT-101"}',
+            )
             step_btn = gr.Button("Execute Step", variant="secondary")
 
     gr.Markdown("### Episode Log")
@@ -425,7 +528,14 @@ with gr.Blocks(title="OpenEnv - HR Compliance Review") as demo:
         result = auto_step_env(api_key, base_url, model_name)
         status, reports, details, score_str, log, action_json = result
         if isinstance(score_str, str):
-            return status, reports, details, wrap_score_html(score_str), log, action_json
+            return (
+                status,
+                reports,
+                details,
+                wrap_score_html(score_str),
+                log,
+                action_json,
+            )
         return status, reports, details, gr.update(), log, action_json
 
     def on_full_episode(api_key, base_url, model_name):
@@ -435,14 +545,44 @@ with gr.Blocks(title="OpenEnv - HR Compliance Review") as demo:
             return status, reports, details, wrap_score_html(score_str), log
         return status, reports, details, gr.update(), log
 
-    load_btn.click(on_load, inputs=[task_dropdown], outputs=[status_bar, reports_table, report_details, score_display, log_output])
-    step_btn.click(on_step, inputs=[action_input], outputs=[status_bar, reports_table, report_details, score_display, log_output])
-    auto_step_btn.click(on_auto_step, inputs=[api_key_input, base_url_input, model_input], outputs=[status_bar, reports_table, report_details, score_display, log_output, action_input])
-    full_episode_btn.click(on_full_episode, inputs=[api_key_input, base_url_input, model_input], outputs=[status_bar, reports_table, report_details, score_display, log_output])
+    load_btn.click(
+        on_load,
+        inputs=[task_dropdown],
+        outputs=[status_bar, reports_table, report_details, score_display, log_output],
+    )
+    step_btn.click(
+        on_step,
+        inputs=[action_input],
+        outputs=[status_bar, reports_table, report_details, score_display, log_output],
+    )
+    auto_step_btn.click(
+        on_auto_step,
+        inputs=[api_key_input, base_url_input, model_input],
+        outputs=[
+            status_bar,
+            reports_table,
+            report_details,
+            score_display,
+            log_output,
+            action_input,
+        ],
+    )
+    full_episode_btn.click(
+        on_full_episode,
+        inputs=[api_key_input, base_url_input, model_input],
+        outputs=[status_bar, reports_table, report_details, score_display, log_output],
+    )
 
 # Mount Gradio onto FastAPI
-app = gr.mount_gradio_app(app, demo, path="/", css=CSS, theme=gr.themes.Soft(primary_hue="indigo", neutral_hue="slate"))
+app = gr.mount_gradio_app(
+    app,
+    demo,
+    path="/",
+    css=CSS,
+    theme=gr.themes.Soft(primary_hue="indigo", neutral_hue="slate"),
+)
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=7860)

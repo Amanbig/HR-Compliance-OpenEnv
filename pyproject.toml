@@ -13,7 +13,11 @@ dependencies = [
     "Faker",
     "uvicorn",
     "fastapi",
+    "openenv-core>=0.2.0",
 ]
+
+[project.scripts]
+server = "server.app:main"
 
 [build-system]
 requires = ["hatchling"]
