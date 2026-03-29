@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir uv
 COPY pyproject.toml .
 
 # Install dependencies only (not the project itself)
-RUN uv pip install --no-cache --system pydantic openai pyyaml python-dotenv Faker uvicorn fastapi
+RUN uv pip install --no-cache --system pydantic openai pyyaml python-dotenv Faker uvicorn fastapi openenv-core
 
 # Copy the rest of the code
 COPY . .
