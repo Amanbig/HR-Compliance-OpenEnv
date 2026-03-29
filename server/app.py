@@ -13,25 +13,22 @@ Serves the HTML frontend and exposes the REST API:
     POST /api/full-episode   — run a complete AI episode (UI)
 """
 
-import json
-import os
 import sys
 from pathlib import Path
 from typing import Optional
-
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 
 # Ensure project root is on sys.path so `env`, `tasks`, etc. resolve
 _PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from env import Action, HRComplianceEnv
-from src.config import API_BASE, API_KEY, MAX_AUTO_STEPS, MODEL, TASK_INFO
-from src.helpers import (
+from env import Action, HRComplianceEnv  # noqa: E402
+from fastapi import FastAPI  # noqa: E402
+from fastapi.responses import HTMLResponse, JSONResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
+from src.config import API_BASE, API_KEY, MAX_AUTO_STEPS, MODEL, TASK_INFO  # noqa: E402
+from src.helpers import (  # noqa: E402
     build_system_prompt,
     load_task_desc,
     make_openai_client,
@@ -140,7 +137,7 @@ async def api_load_task(req: ResetRequest):
     tid = req.task_id
     _env = HRComplianceEnv(tid)
     _task_id = tid
-    obs = _env.reset()
+    _env.reset()
     info = TASK_INFO.get(tid, {"name": "Unknown", "difficulty": "?"})
     desc = load_task_desc(tid)
     obs_data = _env._get_obs()
@@ -312,7 +309,9 @@ async def api_full_episode(req: AIStepRequest):
         )
 
     outcome = "Completed" if done else "Max steps reached"
-    log_lines.append(f"\n{outcome} — Steps: {final_step} | Final score: {final_score:.2f}")
+    log_lines.append(
+        f"\n{outcome} — Steps: {final_step} | Final score: {final_score:.2f}"
+    )
 
     final_obs = _env._get_obs()
     return JSONResponse(
