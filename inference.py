@@ -36,24 +36,29 @@ Your current task: {task_desc}
 
 You interact with the environment by outputting a single JSON action matching this schema:
 {{
-  "action_type": one of ["read", "reply", "move", "delete", "tag"],
+  "action_type": "<type>",
   "item_id": "<report id string>",
-  "payload": "<optional string — folder name for move, tag string for tag, reply text for reply, null otherwise>"
+  "payload": "<string or null>"
 }}
 
-Action descriptions:
-- "read": Mark a report as read. No payload needed.
-- "reply": Reply to a report. payload = your reply text.
-- "move": Move a report to a folder. payload = destination folder name (e.g. "IT_Support", "Confidential").
-- "delete": Move a report to trash. No payload needed.
-- "tag": Add a tag to a report. payload = the tag string (e.g. "safety_hazard", "investigation_required").
+Action types and payloads:
+- "read"     → payload: null. Mark a report as read.
+- "reply"    → payload: reply text. Send a reply to the report.
+- "move"     → payload: folder name (e.g. "IT_Support", "Confidential").
+- "delete"   → payload: null. Move to trash.
+- "tag"      → payload: tag string (e.g. "safety_hazard", "investigation_required").
+- "escalate" → payload: team name (e.g. "Legal", "Security", "HR_Investigation", "Management").
+- "flag"     → payload: "urgent" | "high" | "normal". Set report priority.
+- "assign"   → payload: team or person name (e.g. "HR_Investigation").
+- "close"    → payload: null. Resolve and close a report.
 
 Strategy tips:
-- First read reports to understand their content, then take appropriate action.
-- You can take multiple actions across steps — one action per step.
-- For Task 1: Move IT-related reports to "IT_Support" folder. Leave others in inbox.
-- For Task 2: Tag genuine physical hazards with "safety_hazard" and reply to them. Do NOT tag false positives.
-- For Task 3: Move whistleblower/embezzlement reports to "Confidential" and tag with "investigation_required". Ignore gossip.
+- First read reports to understand content, then act. One action per step.
+- Task 1: Move IT support reports to "IT_Support". Leave others alone.
+- Task 2: Tag genuine physical hazards "safety_hazard" + reply. No false positives.
+- Task 3: Move embezzlement/whistleblower report to "Confidential", tag "investigation_required". Ignore gossip.
+- Task 4: Escalate genuine legal threats (retained counsel, lawsuits) to "Legal". Do NOT escalate venting.
+- Task 5: Find 3 reports from the same victim (harassment pattern). Flag all as "urgent" + assign to "HR_Investigation".
 
 Output ONLY valid JSON. No explanation, no markdown, just the JSON object.""")
 
@@ -180,7 +185,7 @@ def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
     scores = {}
-    for task_id in [1, 2, 3]:
+    for task_id in [1, 2, 3, 4, 5]:
         score = run_task(task_id, client)
         scores[task_id] = score
 

@@ -2,7 +2,8 @@ name: core/hr-compliance
 version: 1.0.0
 description: >
   Triage HR compliance reports: route IT tickets, identify safety hazards,
-  and escalate whistleblower complaints while filtering out office gossip.
+  escalate whistleblower complaints, handle legal threats, and detect
+  multi-report harassment patterns.
 tags:
   - openenv
   - hr-compliance
@@ -27,6 +28,10 @@ observation:
           read: { type: boolean }
           replied: { type: boolean }
           reply_body: { type: string, nullable: true }
+          priority: { type: string, enum: [normal, high, urgent] }
+          escalated_to: { type: string, nullable: true }
+          assigned_to: { type: string, nullable: true }
+          closed: { type: boolean }
     current_folder:
       type: string
 
@@ -36,13 +41,21 @@ action:
   properties:
     action_type:
       type: string
-      enum: [read, reply, move, delete, tag]
+      enum: [read, reply, move, delete, tag, escalate, flag, assign, close]
     item_id:
       type: string
     payload:
       type: string
       nullable: true
-      description: "Folder name (move), tag string (tag), reply text (reply), or null."
+      description: >
+        Depends on action_type:
+        move → folder name (e.g. "IT_Support", "Confidential")
+        tag → tag string (e.g. "safety_hazard", "investigation_required")
+        reply → reply text
+        escalate → team name (e.g. "Legal", "Security", "HR_Investigation", "Management")
+        flag → priority level ("urgent", "high", "normal")
+        assign → assignee name or team
+        read/delete/close → null
 
 reward:
   type: object
@@ -57,8 +70,8 @@ tasks:
     name: "Easy: IT Ticket Routing"
     difficulty: easy
     description: >
-      Identify any incoming messages meant for IT Support (e.g. broken monitors,
-      VPN issues, software licenses) and move them to the 'IT_Support' folder.
+      Identify messages meant for IT Support (broken hardware, VPN issues,
+      software licenses) and move them to the 'IT_Support' folder.
       Leave all other reports in the inbox.
     grader: deterministic
     score_range: [0.0, 1.0]
@@ -67,10 +80,9 @@ tasks:
     name: "Medium: Workplace Safety Violations"
     difficulty: medium
     description: >
-      Identify reports of genuine physical hazards (e.g. chemical spills,
-      exposed wiring, unstable structures). Tag them with 'safety_hazard'
-      and reply acknowledging the report. Do NOT tag false positives that
-      merely use hazard-like language in non-safety contexts.
+      Identify genuine physical hazards (chemical spills, exposed wiring,
+      structural risks). Tag them with 'safety_hazard' and reply to acknowledge.
+      Do NOT tag false positives that use hazard-like language in non-safety contexts.
     grader: deterministic
     score_range: [0.0, 1.0]
 
@@ -78,8 +90,30 @@ tasks:
     name: "Hard: Whistleblower Escalation"
     difficulty: hard
     description: >
-      Detect severe complaints of embezzlement or financial misconduct.
-      Move the whistleblower report to the 'Confidential' folder and tag it
-      'investigation_required'. Do NOT escalate standard office gossip.
+      Detect reports of embezzlement or financial misconduct.
+      Move the report to 'Confidential' and tag it 'investigation_required'.
+      Ignore office gossip — do not escalate it.
+    grader: deterministic
+    score_range: [0.0, 1.0]
+
+  - id: 4
+    name: "Medium-Hard: Legal Threat Routing"
+    difficulty: medium-hard
+    description: >
+      Identify reports containing genuine legal threats (retained counsel,
+      lawsuit notices, EEOC filings). Escalate them to the 'Legal' team using
+      the escalate action. Do NOT escalate venting/emotional complaints that
+      merely express frustration without legal intent.
+    grader: deterministic
+    score_range: [0.0, 1.0]
+
+  - id: 5
+    name: "Hard: Harassment Pattern Detection"
+    difficulty: hard
+    description: >
+      Detect a multi-report harassment pattern: three reports from the same
+      victim about the same harasser. Flag all three reports as 'urgent' priority
+      and assign them to 'HR_Investigation'. Do NOT flag isolated single complaints
+      or random filler reports.
     grader: deterministic
     score_range: [0.0, 1.0]

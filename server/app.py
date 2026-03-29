@@ -1,10 +1,13 @@
 """
 OpenEnv HR Compliance — FastAPI server
 Exposes the standard OpenEnv REST API:
-    POST /reset   — initialise / reset the environment
-    POST /step    — execute one action
+    POST /reset   — initialise / reset the environment (body: {"task_id": 1-5})
+    POST /step    — execute one action (see action_type values below)
     GET  /state   — return current environment state
     GET  /health  — liveness probe
+
+Supported action_type values:
+    read, reply, move, delete, tag, escalate, flag, assign, close
 """
 
 from fastapi import FastAPI
