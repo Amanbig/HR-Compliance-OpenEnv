@@ -7,7 +7,7 @@ The resulting `demo` object is mounted onto FastAPI in app.py.
 
 import gradio as gr
 
-from src.config import API_BASE, API_KEY, MODEL
+from src.config import API_BASE, API_KEY, CSS, MODEL
 from src.handlers import (
     handle_full_episode,
     handle_load_task,
@@ -18,7 +18,11 @@ from src.helpers import wrap_score_html
 
 # ── Gradio Blocks ─────────────────────────────────────────────────────────────
 
-with gr.Blocks(title="OpenEnv — HR Compliance Review") as demo:
+with gr.Blocks(
+    title="OpenEnv — HR Compliance Review",
+    css=CSS,
+    theme=gr.themes.Soft(primary_hue="indigo", neutral_hue="slate"),
+) as demo:
     # Header
     gr.HTML("""
     <div class="main-header">
