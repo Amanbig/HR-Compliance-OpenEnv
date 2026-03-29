@@ -18,11 +18,9 @@ from src.helpers import wrap_score_html
 
 # ── Gradio Blocks ─────────────────────────────────────────────────────────────
 
-with gr.Blocks(
-    title="OpenEnv — HR Compliance Review",
-    css=CSS,
-    theme=gr.themes.Soft(primary_hue="indigo", neutral_hue="slate"),
-) as demo:
+with gr.Blocks(title="OpenEnv — HR Compliance Review") as demo:
+    # Inject CSS directly so it works regardless of Gradio version
+    gr.HTML(f"<style>{CSS}</style>")
     # Header
     gr.HTML("""
     <div class="main-header">
