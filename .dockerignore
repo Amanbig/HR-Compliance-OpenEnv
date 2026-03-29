@@ -5,7 +5,10 @@ __pycache__/
 *.pyc
 .git/
 .gitignore
+.gitattributes
 .dockerignore
 Dockerfile
 uv.lock
 .ruff_cache/
+.claude/
+baseline.py
