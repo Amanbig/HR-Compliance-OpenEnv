@@ -106,7 +106,7 @@
       </div>
       <div>
         <label for="model">Model</label>
-        <input type="text" id="model" value="meta-llama/Llama-3.3-70B-Instruct">
+        <input type="text" id="model" placeholder="meta-llama/Llama-3.3-70B-Instruct">
       </div>
       <div>
         <label for="baseUrl">Base URL</label>
@@ -201,7 +201,11 @@ async function api(path, body) {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(body),
   });
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || data.detail || `Server error (${res.status})`);
+  }
+  return data;
 }
 
 function setStatus(html) { $('status').innerHTML = html; }
@@ -287,18 +291,18 @@ async function singleAiStep() {
   setStatus('<span class="loading">AI is thinking...</span>');
   try {
     const data = await api('/api/single-ai-step', settings);
-    if (data.error) { setLog(`Error: ${data.error}`); setStatus('Error'); return; }
     renderReportsTable(data.observation.reports);
     renderReportDetails(data.observation.reports);
     setScore(data.info.score.toFixed(2));
     $('actionInput').value = data.action_json || '';
     const r = data.reward;
     let log = `AI: ${data.action.action_type}(${data.action.item_id})\nReward: ${r.value.toFixed(2)} | ${r.reason}`;
+    if (data.raw_response) log += `\n\nRaw model output:\n${data.raw_response}`;
     if (data.done) log += `\n\nTask completed! Final score: ${data.info.score.toFixed(2)}`;
     setLog(log);
     setStatus(`Folder: ${data.observation.current_folder} | ${data.observation.reports.length} reports` +
       (data.done ? ' | DONE' : ''));
-  } catch (e) { setLog(`Error: ${e.message}`); setStatus('Error'); }
+  } catch (e) { setLog(`Error: ${e.message}`); setStatus(`Error: ${e.message}`); }
 }
 
 async function runFullEpisode() {
@@ -307,7 +311,6 @@ async function runFullEpisode() {
   setLog('Starting full episode...');
   try {
     const data = await api('/api/full-episode', settings);
-    if (data.error) { setLog(`Error: ${data.error}`); setStatus('Error'); return; }
     renderReportsTable(data.observation.reports);
     renderReportDetails(data.observation.reports);
     setScore(data.score.toFixed(2));
@@ -315,7 +318,7 @@ async function runFullEpisode() {
     const passed = data.score >= 1.0 ? ' ✓ PASSED' : '';
     setStatus(`<strong>Task ${data.task_id}: ${data.task_name}</strong> | ` +
       `Score: ${data.score.toFixed(2)} | Steps: ${data.steps}${passed}`);
-  } catch (e) { setLog(`Error: ${e.message}`); setStatus('Error'); }
+  } catch (e) { setLog(`Error: ${e.message}`); setStatus(`Error: ${e.message}`); }
 }
 </script>
 </body>

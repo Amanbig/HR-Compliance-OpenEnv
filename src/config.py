@@ -18,7 +18,11 @@ API_KEY: str = (
     or os.environ.get("API_KEY")
     or os.environ.get("OPENAI_API_KEY", "")
 )
-API_BASE: str = os.environ.get("API_BASE_URL") or os.environ.get("OPENAI_BASE_URL", "")
+API_BASE: str = (
+    os.environ.get("API_BASE_URL")
+    or os.environ.get("OPENAI_BASE_URL")
+    or "https://router.huggingface.co/v1"
+)
 MODEL: str = os.environ.get("MODEL_NAME") or os.environ.get(
     "OPENAI_MODEL", "meta-llama/Llama-3.3-70B-Instruct"
 )

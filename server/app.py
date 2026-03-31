@@ -184,31 +184,68 @@ async def api_single_ai_step(req: AIStepRequest):
     base_url = req.base_url or API_BASE
     model_name = req.model or MODEL
 
-    if not api_key and not base_url:
+    if not api_key:
         return JSONResponse(
             status_code=400,
-            content={"error": "Set API Key or Base URL in Settings."},
+            content={
+                "error": "API key is missing. Set HF_TOKEN in Space secrets or enter it in Settings."
+            },
+        )
+    if not base_url:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "Base URL is missing. Set API_BASE_URL in Space secrets or enter it in Settings."
+            },
         )
 
     obs = _env._get_obs()
     desc = load_task_desc(_task_id)
     client = make_openai_client(api_key, base_url)
 
-    resp = client.chat.completions.create(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": build_system_prompt(desc)},
-            {
-                "role": "user",
-                "content": f"Current observation:\n{obs.model_dump_json()}",
-            },
-        ],
-        temperature=0.2,
-        max_tokens=300,
-    )
+    try:
+        resp = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": build_system_prompt(desc)},
+                {
+                    "role": "user",
+                    "content": f"Current observation:\n{obs.model_dump_json()}",
+                },
+            ],
+            temperature=0.2,
+            max_tokens=300,
+        )
+    except Exception as exc:
+        msg = str(exc)
+        if "401" in msg or "auth" in msg.lower() or "token" in msg.lower():
+            detail = f"Authentication failed — check your API key. Details: {msg}"
+        elif "404" in msg:
+            detail = (
+                f"Model not found — check model name '{model_name}'. Details: {msg}"
+            )
+        elif "429" in msg or "rate" in msg.lower():
+            detail = (
+                f"Rate limited — too many requests, try again later. Details: {msg}"
+            )
+        else:
+            detail = f"API call failed: {msg}"
+        return JSONResponse(status_code=502, content={"error": detail})
+
     action_json = resp.choices[0].message.content or ""
-    parsed = parse_action_json(action_json)
-    action = Action(**parsed)
+
+    try:
+        parsed = parse_action_json(action_json)
+        action = Action(**parsed)
+    except Exception as exc:
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": f"Model returned invalid action JSON: {exc}",
+                "raw_response": action_json[:500],
+            },
+        )
+
     obs, reward, done, info = _env.step(action)
 
     return JSONResponse(
@@ -234,10 +271,19 @@ async def api_full_episode(req: AIStepRequest):
     base_url = req.base_url or API_BASE
     model_name = req.model or MODEL
 
-    if not api_key and not base_url:
+    if not api_key:
         return JSONResponse(
             status_code=400,
-            content={"error": "Set API Key or Base URL in Settings."},
+            content={
+                "error": "API key is missing. Set HF_TOKEN in Space secrets or enter it in Settings."
+            },
+        )
+    if not base_url:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "Base URL is missing. Set API_BASE_URL in Space secrets or enter it in Settings."
+            },
         )
 
     _env = HRComplianceEnv(_task_id)
@@ -245,7 +291,14 @@ async def api_full_episode(req: AIStepRequest):
     obs = _env._get_obs()
     desc = load_task_desc(_task_id)
     info_t = TASK_INFO[_task_id]
-    client = make_openai_client(api_key, base_url)
+
+    try:
+        client = make_openai_client(api_key, base_url)
+    except Exception as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"Failed to create API client: {exc}"},
+        )
 
     messages = [{"role": "system", "content": build_system_prompt(desc)}]
     log_lines = [
@@ -269,7 +322,16 @@ async def api_full_episode(req: AIStepRequest):
             )
             response_text = resp.choices[0].message.content or ""
         except Exception as exc:
-            log_lines.append(f"Step {step_num}: API Error — {exc}")
+            msg = str(exc)
+            if "401" in msg or "auth" in msg.lower() or "token" in msg.lower():
+                detail = f"Authentication failed — check your API key. ({msg})"
+            elif "404" in msg:
+                detail = f"Model '{model_name}' not found — check model name. ({msg})"
+            elif "429" in msg or "rate" in msg.lower():
+                detail = f"Rate limited — try again later. ({msg})"
+            else:
+                detail = f"API error: {msg}"
+            log_lines.append(f"Step {step_num}: {detail}")
             break
 
         messages.append({"role": "assistant", "content": response_text})
